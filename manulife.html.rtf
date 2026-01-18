@@ -1,0 +1,693 @@
+{\rtf1\ansi\ansicpg950\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 import React, \{ useState, useMemo \} from 'react';\
+import \{ \
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,\
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend\
+\} from 'recharts';\
+import \{ \
+  Users, FileText, PlusCircle, Shield, Printer, ChevronRight, \
+  LayoutDashboard, Trash2, Sparkles, Baby, User, AlertTriangle, Phone\
+\} from 'lucide-react';\
+\
+// --- Mock Data & Constants ---\
+\
+const INSURERS = [\
+  \{ id: 'manulife', name: 'Manulife \uc0\u23439 \u21033 ', color: '#00A758' \}, // \u35373 \u28858 \u39318 \u20301 \
+  \{ id: 'aia', name: 'AIA \uc0\u21451 \u37030 ', color: '#D31145' \},\
+  \{ id: 'prudential', name: 'Prudential \uc0\u20445 \u35488 ', color: '#ED1B24' \},\
+  \{ id: 'axa', name: 'AXA \uc0\u23433 \u30427 ', color: '#00008F' \},\
+  \{ id: 'sunlife', name: 'Sun Life \uc0\u27704 \u26126 ', color: '#E3A11F' \},\
+  \{ id: 'ftlife', name: 'FTLife \uc0\u23500 \u36890 ', color: '#006495' \},\
+  \{ id: 'boc', name: 'BOC Life \uc0\u20013 \u37504 ', color: '#B61F2E' \},\
+];\
+\
+const POLICY_TYPES = [\
+  \{ id: 'life', name: '\uc0\u20154 \u22781 \u20445 \u38556  (Life)', unit: '\u20445 \u38989 ' \},\
+  \{ id: 'ci', name: '\uc0\u21361 \u30142 \u20445 \u38556  (CI)', unit: '\u20445 \u38989 ' \},\
+  \{ id: 'medical', name: '\uc0\u37291 \u30274 /\u20303 \u38498  (Medical)', unit: '\u19978 \u38480 ' \},\
+  \{ id: 'accident', name: '\uc0\u24847 \u22806 \u20445 \u38556  (Accident)', unit: '\u20445 \u38989 ' \},\
+  \{ id: 'savings', name: '\uc0\u20786 \u33988 /\u24180 \u37329  (Savings)', unit: '\u38928 \u26399 \u22238 \u22577 ' \},\
+];\
+\
+const MARITAL_STATUS_OPTIONS = ['\uc0\u26410 \u23130 ', '\u24050 \u23130 '];\
+const CHILDREN_COUNT_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];\
+\
+// \uc0\u38928 \u35373 \u23458 \u25142 \u36039 \u26009 \
+const INITIAL_CLIENT = \{\
+  name: "\uc0\u38515 \u22823 \u25991  (David Chan)",\
+  age: 35,\
+  maritalStatus: "\uc0\u24050 \u23130 ",\
+  childrenCount: 1,\
+  occupation: "\uc0\u39640 \u32026 \u26371 \u35336 \u32147 \u29702 ",\
+  income: 600000, // \uc0\u24180 \u34218 \
+  advisorName: "Alex",\
+  advisorPhone: "9876 5432", // \uc0\u39015 \u21839 \u38651 \u35441 \
+  advisorComment: "\uc0\u65288 \u35531 \u40670 \u25802 \u19978 \u26041  AI \u25353 \u37397 \u65292 \u36914 \u34892 \u20445 \u38556 \u32570 \u21475 \u35222 \u20687 \u21270 \u20998 \u26512 ...\u65289 ",\
+\};\
+\
+// \uc0\u38928 \u35373 \u20445 \u21934 \u36039 \u26009  (\u27169 \u25836 \u19981 \u36275 \u30340 \u24773 \u27841 \u65292 \u20197 \u39023 \u31034 \u32570 \u21475 )\
+const INITIAL_POLICIES = [\
+  \{ id: 1, insurer: 'manulife', name: '\uc0\u27963 \u32768 \u20154 \u29983 \u21361 \u30142 \u20445 ', type: 'ci', amount: 800000, premium: 18000, year: 2020, status: '\u29983 \u25928 \u20013 ' \},\
+  \{ id: 2, insurer: 'aia', name: '\uc0\u24847 \u22806 \u20445 \u38570 ', type: 'accident', amount: 500000, premium: 2000, year: 2018, status: '\u29983 \u25928 \u20013 ' \},\
+];\
+\
+// --- Components ---\
+\
+const Card = (\{ children, className = "" \}) => (\
+  <div className=\{`bg-white rounded-xl shadow-sm border border-emerald-100 $\{className\}`\}>\
+    \{children\}\
+  </div>\
+);\
+\
+const Badge = (\{ children, type \}) => \{\
+  const styles = \{\
+    life: "bg-blue-100 text-blue-800",\
+    ci: "bg-red-100 text-red-800",\
+    medical: "bg-emerald-100 text-emerald-800",\
+    accident: "bg-yellow-100 text-yellow-800",\
+    savings: "bg-purple-100 text-purple-800",\
+    default: "bg-gray-100 text-gray-800"\
+  \};\
+  return (\
+    <span className=\{`px-2 py-1 rounded-full text-xs font-medium $\{styles[type] || styles.default\}`\}>\
+      \{children\}\
+    </span>\
+  );\
+\};\
+\
+export default function InsurancePortfolioApp() \{\
+  const [view, setView] = useState('dashboard'); // 'dashboard' or 'report'\
+  const [client, setClient] = useState(INITIAL_CLIENT);\
+  const [policies, setPolicies] = useState(INITIAL_POLICIES);\
+  const [isEditing, setIsEditing] = useState(false);\
+  const [newPolicy, setNewPolicy] = useState(\{ insurer: 'manulife', type: 'life', amount: 0, name: '' \});\
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);\
+  const [aiAnalysisData, setAiAnalysisData] = useState(null);\
+\
+  // --- Calculations ---\
+  \
+  const stats = useMemo(() => \{\
+    const breakdown = \{\
+      life: 0,\
+      ci: 0,\
+      medical: 0,\
+      accident: 0,\
+      savings: 0,\
+    \};\
+    \
+    let totalPremium = 0;\
+\
+    policies.forEach(p => \{\
+      if (breakdown[p.type] !== undefined) \{\
+        breakdown[p.type] += Number(p.amount);\
+      \}\
+      totalPremium += Number(p.premium);\
+    \});\
+\
+    // \uc0\u22291 \u39173 \u22294 \u25976 \u25818 \
+    const chartData = [\
+      \{ name: '\uc0\u20154 \u22781 ', value: breakdown.life, fill: '#3B82F6' \},\
+      \{ name: '\uc0\u21361 \u30142 ', value: breakdown.ci, fill: '#EF4444' \},\
+      \{ name: '\uc0\u37291 \u30274 ', value: breakdown.medical, fill: '#00A758' \}, \
+      \{ name: '\uc0\u24847 \u22806 ', value: breakdown.accident, fill: '#F59E0B' \},\
+      \{ name: '\uc0\u20786 \u33988 ', value: breakdown.savings, fill: '#8B5CF6' \},\
+    ].filter(item => item.value > 0);\
+\
+    return \{ breakdown, totalPremium, chartData \};\
+  \}, [policies]);\
+\
+  const formatCurrency = (val) => \{\
+    return new Intl.NumberFormat('zh-HK', \{ style: 'currency', currency: 'HKD', maximumFractionDigits: 0 \}).format(val);\
+  \};\
+\
+  const formatShortCurrency = (val) => \{\
+    if (val >= 1000000) return `$$\{(val / 1000000).toFixed(1)\}M`; // e.g. $1.5M\
+    if (val >= 10000) return `$$\{(val / 10000).toFixed(0)\}\uc0\u33836 `; // e.g. $50\u33836 \
+    return `$$\{val\}`;\
+  \};\
+\
+  // --- Actions ---\
+\
+  const handleAddPolicy = () => \{\
+    if (!newPolicy.name || newPolicy.amount <= 0) return;\
+    const policy = \{\
+      ...newPolicy,\
+      id: Date.now(),\
+      premium: newPolicy.premium || 0,\
+      year: new Date().getFullYear(),\
+      status: '\uc0\u29983 \u25928 \u20013 '\
+    \};\
+    setPolicies([...policies, policy]);\
+    setNewPolicy(\{ insurer: 'manulife', type: 'life', amount: 0, name: '', premium: 0 \});\
+    setIsEditing(false);\
+  \};\
+\
+  const handleDeletePolicy = (id) => \{\
+    setPolicies(policies.filter(p => p.id !== id));\
+  \};\
+\
+  const generateAIAdvice = () => \{\
+    setIsGeneratingAI(true);\
+    \
+    // \uc0\u27169 \u25836  AI \u36939 \u31639 \
+    setTimeout(() => \{\
+      const \{ life, ci, medical \} = stats.breakdown;\
+      const \{ income \} = client;\
+      \
+      // \uc0\u35336 \u31639 \u12300 \u25033 \u26377 \u20445 \u38556 \u12301  (Ideal Coverage Logic)\
+      const targetLife = income * 10;\
+      const targetCI = income * 3;\
+      const targetMedical = 5000000; \
+      const targetAccident = 1000000;\
+      const targetWealth = 2000000; // \uc0\u27169 \u25836 \u30446 \u27161 \
+\
+      // \uc0\u28310 \u20633 \u38647 \u36948 \u22294 \u25976 \u25818  (\u27161 \u28310 \u21270 \u28858  0-100 \u20998 )\
+      const scoreLife = Math.min(100, Math.round((life / targetLife) * 100));\
+      const scoreCI = Math.min(100, Math.round((ci / targetCI) * 100));\
+      const scoreMedical = Math.min(100, Math.round((medical / targetMedical) * 100));\
+\
+      // \uc0\u22312 \u27161 \u31844 \u19978 \u30452 \u25509 \u21152 \u19978 \u30446 \u27161 \u37329 \u38989 \
+      const analysisData = [\
+        \{ subject: `\uc0\u20154 \u22781 \\n(\u30446 \u27161 :$\{formatShortCurrency(targetLife)\})`, A: scoreLife, B: 100, fullMark: 100, actual: life, target: targetLife \},\
+        \{ subject: `\uc0\u21361 \u30142 \\n(\u30446 \u27161 :$\{formatShortCurrency(targetCI)\})`, A: scoreCI, B: 100, fullMark: 100, actual: ci, target: targetCI \},\
+        \{ subject: `\uc0\u37291 \u30274 \\n(\u30446 \u27161 :$\{formatShortCurrency(targetMedical)\})`, A: scoreMedical, B: 100, fullMark: 100, actual: medical, target: targetMedical \},\
+        \{ subject: `\uc0\u24847 \u22806 \\n(\u30446 \u27161 :$\{formatShortCurrency(targetAccident)\})`, A: 30, B: 100, fullMark: 100, actual: 0, target: targetAccident \}, \
+        \{ subject: `\uc0\u20786 \u33988 \\n(\u30446 \u27161 :$\{formatShortCurrency(targetWealth)\})`, A: 20, B: 100, fullMark: 100, actual: 0, target: targetWealth \}, \
+      ];\
+\
+      setAiAnalysisData(analysisData);\
+      \
+      let advice = [];\
+      advice.push(`\uc0\u12304 AI \u26234 \u33021 \u24046 \u36317 \u20998 \u26512 \u12305 \\n\u31995 \u32113 \u24050 \u26356 \u26032 \u20445 \u38556 \u32570 \u21475 \u38647 \u36948 \u22294 \u65292 \u22294 \u20013 \u24050 \u27161 \u31034 \u24314 \u35696 \u30340 \u30446 \u27161 \u20445 \u38556 \u38989 \u65292 \u35531 \u21443 \u38321 \u22577 \u21578 \u38913 \u38754 \u12290 `);\
+      \
+      setClient(prev => (\{ ...prev, advisorComment: advice.join('\\n\\n') \}));\
+      setIsGeneratingAI(false);\
+    \}, 1200);\
+  \};\
+\
+  // --- Views ---\
+\
+  const Sidebar = () => (\
+    <div className="w-64 bg-emerald-900 text-white h-screen fixed left-0 top-0 flex flex-col print:hidden">\
+      <div className="p-6 border-b border-emerald-800">\
+        <div className="flex items-center gap-2 font-bold text-xl">\
+          <Shield className="text-emerald-400" />\
+          <span>\uc0\u20445 \u21934 \u31649 \u23478  Pro</span>\
+        </div>\
+        <p className="text-xs text-emerald-300 mt-1">\uc0\u26234 \u33021 \u39015 \u21839 \u31995 \u32113 </p>\
+      </div>\
+      \
+      <nav className="flex-1 p-4 space-y-2">\
+        <button \
+          onClick=\{() => setView('dashboard')\}\
+          className=\{`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors $\{view === 'dashboard' ? 'bg-emerald-600 text-white shadow-lg' : 'text-emerald-200 hover:bg-emerald-800'\}`\}\
+        >\
+          <LayoutDashboard size=\{20\} />\
+          <span>\uc0\u24460 \u21488 \u31649 \u29702  (Admin)</span>\
+        </button>\
+        <button \
+          onClick=\{() => setView('report')\}\
+          className=\{`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors $\{view === 'report' ? 'bg-emerald-600 text-white shadow-lg' : 'text-emerald-200 hover:bg-emerald-800'\}`\}\
+        >\
+          <FileText size=\{20\} />\
+          <span>\uc0\u23458 \u25142 \u22577 \u21578  (Report)</span>\
+        </button>\
+      </nav>\
+\
+      <div className="p-4 border-t border-emerald-800">\
+        <div className="flex items-center gap-3">\
+          <div className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center border-2 border-emerald-500">\
+            <Users size=\{20\} />\
+          </div>\
+          <div>\
+            <p className="text-sm font-medium">\uc0\u39015 \u21839  \{client.advisorName\}</p>\
+            <p className="text-xs text-emerald-400">Manulife</p>\
+          </div>\
+        </div>\
+      </div>\
+    </div>\
+  );\
+\
+  const DashboardView = () => (\
+    <div className="p-8 max-w-5xl mx-auto">\
+      <header className="mb-8 flex justify-between items-center">\
+        <div>\
+          <h1 className="text-2xl font-bold text-slate-900">\uc0\u23458 \u25142 \u27284 \u26696 \u31649 \u29702 </h1>\
+          <p className="text-slate-500">\uc0\u31649 \u29702  \{client.name\} \u30340 \u25152 \u26377 \u20445 \u21934 \u36039 \u26009 </p>\
+        </div>\
+        <button onClick=\{() => setView('report')\} className="flex items-center gap-2 bg-emerald-700 text-white px-4 py-2 rounded-lg hover:bg-emerald-800 transition shadow">\
+          \uc0\u38928 \u35261 \u22577 \u21578  <ChevronRight size=\{16\} />\
+        </button>\
+      </header>\
+\
+      \{/* Client Info Edit Section */\}\
+      <Card className="mb-6 p-6 border-l-4 border-l-emerald-500">\
+        <div className="flex justify-between items-start mb-4">\
+          <h3 className="font-bold text-lg flex items-center gap-2 text-emerald-800"><Users size=\{20\} /> \uc0\u22522 \u26412 \u36039 \u26009  & AI \u20998 \u26512 \u35373 \u23450 </h3>\
+        </div>\
+        <div className="grid grid-cols-2 gap-6">\
+          <div className="space-y-4">\
+             <div>\
+              <label className="block text-sm font-medium text-slate-600 mb-1">\uc0\u23458 \u25142 \u22995 \u21517 </label>\
+              <input type="text" value=\{client.name\} onChange=\{(e) => setClient(\{...client, name: e.target.value\})\} className="w-full border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-emerald-500 outline-none" />\
+            </div>\
+            <div className="grid grid-cols-2 gap-2">\
+               <div>\
+                <label className="block text-sm font-medium text-slate-600 mb-1">\uc0\u24180 \u40801 </label>\
+                <input type="number" value=\{client.age\} onChange=\{(e) => setClient(\{...client, age: e.target.value\})\} className="w-full border border-slate-300 rounded-md p-2" />\
+               </div>\
+               <div>\
+                <label className="block text-sm font-medium text-slate-600 mb-1">\uc0\u24180 \u25910 \u20837  (HKD)</label>\
+                <input type="number" value=\{client.income\} onChange=\{(e) => setClient(\{...client, income: parseInt(e.target.value)\})\} className="w-full border border-slate-300 rounded-md p-2" placeholder="\uc0\u29992 \u26044 \u35336 \u31639 \u32570 \u21475 " />\
+               </div>\
+            </div>\
+             <div className="grid grid-cols-2 gap-2">\
+              <div>\
+                <label className="block text-sm font-medium text-slate-600 mb-1">\uc0\u39015 \u21839 \u21517 \u31281 </label>\
+                <input type="text" value=\{client.advisorName\} onChange=\{(e) => setClient(\{...client, advisorName: e.target.value\})\} className="w-full border border-slate-300 rounded-md p-2" />\
+               </div>\
+               <div>\
+                <label className="block text-sm font-medium text-slate-600 mb-1">\uc0\u39015 \u21839 \u38651 \u35441 </label>\
+                <input type="text" value=\{client.advisorPhone\} onChange=\{(e) => setClient(\{...client, advisorPhone: e.target.value\})\} className="w-full border border-slate-300 rounded-md p-2" placeholder="9123 4567" />\
+               </div>\
+            </div>\
+            \
+            <div className="grid grid-cols-2 gap-2">\
+              <div>\
+                <label className="block text-sm font-medium text-slate-600 mb-1 flex items-center gap-1">\
+                   <User size=\{14\}/> \uc0\u23130 \u23035 \u29376 \u27841 \
+                </label>\
+                <select \
+                  value=\{client.maritalStatus\} \
+                  onChange=\{(e) => setClient(\{...client, maritalStatus: e.target.value\})\} \
+                  className="w-full border border-slate-300 rounded-md p-2 bg-white"\
+                >\
+                  \{MARITAL_STATUS_OPTIONS.map(opt => <option key=\{opt\} value=\{opt\}>\{opt\}</option>)\}\
+                </select>\
+              </div>\
+              <div>\
+                <label className="block text-sm font-medium text-slate-600 mb-1 flex items-center gap-1">\
+                   <Baby size=\{14\}/> \uc0\u23376 \u22899 \u25976 \u30446 \
+                </label>\
+                <select \
+                  value=\{client.childrenCount\} \
+                  onChange=\{(e) => setClient(\{...client, childrenCount: parseInt(e.target.value)\})\} \
+                  className="w-full border border-slate-300 rounded-md p-2 bg-white"\
+                >\
+                  \{CHILDREN_COUNT_OPTIONS.map(opt => <option key=\{opt\} value=\{opt\}>\{opt\}</option>)\}\
+                </select>\
+              </div>\
+            </div>\
+          </div>\
+\
+          <div className="mt-0">\
+            <div className="flex justify-between items-center mb-2">\
+              <label className="block text-sm font-medium text-slate-600">\uc0\u39015 \u21839 \u23560 \u26989 \u24314 \u35696 </label>\
+              <button \
+                onClick=\{generateAIAdvice\}\
+                disabled=\{isGeneratingAI\}\
+                className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-1.5 rounded-full text-xs font-bold hover:shadow-lg hover:scale-105 transition disabled:opacity-50 disabled:scale-100"\
+              >\
+                \{isGeneratingAI ? 'AI \uc0\u36939 \u31639 \u20013 ...' : <><Sparkles size=\{14\} /> \u29983 \u25104  AI \u24046 \u36317 \u20998 \u26512 </>\}\
+              </button>\
+            </div>\
+            <textarea \
+              value=\{client.advisorComment\} \
+              onChange=\{(e) => setClient(\{...client, advisorComment: e.target.value\})\} \
+              className="w-full border border-slate-300 rounded-md p-3 h-48 bg-emerald-50/30 leading-relaxed text-sm focus:ring-2 focus:ring-emerald-500 outline-none"\
+              placeholder="\uc0\u40670 \u25802 \u21491 \u19978 \u35282 \u25353 \u37397 \u65292 \u35731  AI \u28858 \u20320 \u25776 \u23531 \u20998 \u26512 ..."\
+            />\
+          </div>\
+        </div>\
+      </Card>\
+\
+      \{/* Policy Management */\}\
+      <Card className="p-6">\
+        <div className="flex justify-between items-center mb-6">\
+          <h3 className="font-bold text-lg flex items-center gap-2 text-emerald-800"><FileText size=\{20\} /> \uc0\u20445 \u21934 \u24235 \u23384 </h3>\
+          <button \
+            onClick=\{() => setIsEditing(true)\}\
+            className="flex items-center gap-2 bg-emerald-600 text-white px-3 py-1.5 rounded-md hover:bg-emerald-700 text-sm shadow"\
+          >\
+            <PlusCircle size=\{16\} /> \uc0\u26032 \u22686 \u20445 \u21934 \
+          </button>\
+        </div>\
+\
+        \{isEditing && (\
+          <div className="mb-6 bg-emerald-50 p-4 rounded-lg border border-emerald-200">\
+            <h4 className="font-bold text-sm mb-3 text-emerald-800">\uc0\u26032 \u22686 \u20445 \u21934 \u36039 \u26009 </h4>\
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">\
+              <select \
+                className="border p-2 rounded"\
+                value=\{newPolicy.insurer\}\
+                onChange=\{(e) => setNewPolicy(\{...newPolicy, insurer: e.target.value\})\}\
+              >\
+                \{INSURERS.map(i => <option key=\{i.id\} value=\{i.id\}>\{i.name\}</option>)\}\
+              </select>\
+              <select \
+                className="border p-2 rounded"\
+                value=\{newPolicy.type\}\
+                onChange=\{(e) => setNewPolicy(\{...newPolicy, type: e.target.value\})\}\
+              >\
+                \{POLICY_TYPES.map(t => <option key=\{t.id\} value=\{t.id\}>\{t.name\}</option>)\}\
+              </select>\
+              <input \
+                placeholder="\uc0\u20445 \u21934 \u21517 \u31281 " \
+                className="border p-2 rounded"\
+                value=\{newPolicy.name\}\
+                onChange=\{(e) => setNewPolicy(\{...newPolicy, name: e.target.value\})\}\
+              />\
+              <input \
+                type="number" \
+                placeholder="\uc0\u20445 \u38556 \u38989  (HKD)" \
+                className="border p-2 rounded"\
+                value=\{newPolicy.amount\}\
+                onChange=\{(e) => setNewPolicy(\{...newPolicy, amount: parseInt(e.target.value)\})\}\
+              />\
+              <input \
+                type="number" \
+                placeholder="\uc0\u24180 \u32371 \u20445 \u36027  (HKD)" \
+                className="border p-2 rounded"\
+                value=\{newPolicy.premium\}\
+                onChange=\{(e) => setNewPolicy(\{...newPolicy, premium: parseInt(e.target.value)\})\}\
+              />\
+            </div>\
+            <div className="flex gap-2">\
+              <button onClick=\{handleAddPolicy\} className="bg-emerald-800 text-white px-4 py-2 rounded text-sm hover:bg-emerald-900">\uc0\u30906 \u35469 \u26032 \u22686 </button>\
+              <button onClick=\{() => setIsEditing(false)\} className="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded text-sm hover:bg-slate-50">\uc0\u21462 \u28040 </button>\
+            </div>\
+          </div>\
+        )\}\
+\
+        <div className="overflow-x-auto">\
+          <table className="w-full text-left border-collapse">\
+            <thead>\
+              <tr className="border-b text-slate-500 text-sm">\
+                <th className="py-3 px-2">\uc0\u20844 \u21496 </th>\
+                <th className="py-3 px-2">\uc0\u35336 \u21123 \u21517 \u31281 </th>\
+                <th className="py-3 px-2">\uc0\u39006 \u22411 </th>\
+                <th className="py-3 px-2 text-right">\uc0\u20445 \u38556 \u38989 </th>\
+                <th className="py-3 px-2 text-right">\uc0\u20445 \u36027 </th>\
+                <th className="py-3 px-2 text-center">\uc0\u25805 \u20316 </th>\
+              </tr>\
+            </thead>\
+            <tbody>\
+              \{policies.map(policy => (\
+                <tr key=\{policy.id\} className="border-b border-slate-100 hover:bg-emerald-50/50 transition">\
+                  <td className="py-3 px-2 font-medium text-slate-900">\
+                    <span className=\{`inline-block w-2 h-2 rounded-full mr-2`\} style=\{\{backgroundColor: INSURERS.find(i => i.id === policy.insurer)?.color\}\}></span>\
+                    \{INSURERS.find(i => i.id === policy.insurer)?.name\}\
+                  </td>\
+                  <td className="py-3 px-2 text-slate-600">\{policy.name\}</td>\
+                  <td className="py-3 px-2">\
+                    <Badge type=\{policy.type\}>\
+                      \{POLICY_TYPES.find(t => t.id === policy.type)?.name.split(' ')[0]\}\
+                    </Badge>\
+                  </td>\
+                  <td className="py-3 px-2 text-right font-mono text-slate-700">\{formatCurrency(policy.amount)\}</td>\
+                  <td className="py-3 px-2 text-right text-slate-500 text-sm">\{formatCurrency(policy.premium)\}</td>\
+                  <td className="py-3 px-2 text-center">\
+                    <button onClick=\{() => handleDeletePolicy(policy.id)\} className="text-red-400 hover:text-red-600 p-1">\
+                      <Trash2 size=\{16\} />\
+                    </button>\
+                  </td>\
+                </tr>\
+              ))\}\
+            </tbody>\
+          </table>\
+          \{policies.length === 0 && <p className="text-center text-slate-400 py-8">\uc0\u26283 \u28961 \u20445 \u21934 \u36039 \u26009 \u65292 \u35531 \u26032 \u22686 \u12290 </p>\}\
+        </div>\
+      </Card>\
+    </div>\
+  );\
+\
+  const ReportView = () => (\
+    <div className="bg-slate-100 min-h-screen pb-10 print:bg-white print:pb-0">\
+      \{/* Print Control Bar */\}\
+      <div className="bg-emerald-900 text-white p-4 sticky top-0 z-50 flex justify-between items-center shadow-lg print:hidden">\
+        <button onClick=\{() => setView('dashboard')\} className="flex items-center gap-2 text-emerald-100 hover:text-white transition">\
+          <ChevronRight size=\{16\} className="rotate-180"/> \uc0\u36820 \u22238 \u24460 \u21488 \
+        </button>\
+        <div className="flex items-center gap-4">\
+          <span className="text-sm text-emerald-200">\uc0\u23458 \u25142 \u35222 \u35282 \u27169 \u24335 </span>\
+          <button onClick=\{() => window.print()\} className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded flex items-center gap-2 font-medium transition shadow-lg">\
+            <Printer size=\{18\} /> \uc0\u21295 \u20986  PDF / \u21015 \u21360 \
+          </button>\
+        </div>\
+      </div>\
+\
+      \{/* A4 Report Container */\}\
+      <div className="max-w-[210mm] mx-auto bg-white min-h-[297mm] shadow-2xl mt-8 p-[15mm] print:shadow-none print:mt-0 print:mx-0 print:w-full print:max-w-none relative">\
+        \
+        \{/* Decorative Top Bar */\}\
+        <div className="absolute top-0 left-0 w-full h-3 bg-emerald-600"></div>\
+\
+        \{/* Header */\}\
+        <div className="flex justify-between items-start border-b border-emerald-100 pb-6 mb-8 mt-4">\
+          <div>\
+            <h1 className="text-4xl font-serif font-bold text-emerald-900 mb-2 tracking-tight">\uc0\u20445 \u38556 \u32317 \u35261 \u22577 \u21578 </h1>\
+            <p className="text-emerald-600 uppercase tracking-widest text-xs font-semibold">Insurance Portfolio Overview</p>\
+          </div>\
+          <div className="text-right">\
+            <h2 className="text-2xl font-bold text-slate-800">\{client.name\}</h2>\
+            <div className="text-slate-500 text-sm mt-1 flex flex-col items-end gap-1">\
+               <span>\uc0\u22577 \u21578 \u26085 \u26399 : \{new Date().toLocaleDateString()\}</span>\
+               <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-xs font-medium">\
+                 \{client.age\}\uc0\u27506  | \{client.maritalStatus\} \{client.childrenCount > 0 && `| $\{client.childrenCount\} \u23376 \u22899 `\}\
+               </span>\
+            </div>\
+            <div className="mt-3 flex flex-col items-end gap-1 text-emerald-800 text-sm">\
+              <div className="flex items-center gap-2 font-bold">\
+                 <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>\
+                 \uc0\u29702 \u36001 \u39015 \u21839 : \{client.advisorName\} | Manulife\
+              </div>\
+              <div className="flex items-center gap-1.5 text-xs text-slate-600">\
+                 <Phone size=\{12\} fill="currentColor" className="text-emerald-600"/>\
+                 \{client.advisorPhone\}\
+              </div>\
+            </div>\
+          </div>\
+        </div>\
+\
+        \{/* AI Analysis Section (Visual Gap - Chart Only) */\}\
+        \{aiAnalysisData && (\
+          <div className="mb-10 bg-slate-50 rounded-xl p-6 border border-slate-100 relative overflow-hidden">\
+            <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-emerald-500 to-teal-500"></div>\
+            <div className="flex items-center gap-2 mb-6">\
+              <Sparkles className="text-emerald-600" size=\{24\} />\
+              <h3 className="text-xl font-bold text-slate-800">AI \uc0\u26234 \u33021 \u20445 \u38556 \u32570 \u21475 \u20998 \u26512 </h3>\
+            </div>\
+\
+            <div className="flex justify-center py-4">\
+              \{/* Radar Chart Centered and Enlarged */\}\
+              <div className="h-96 w-full max-w-xl relative">\
+                <ResponsiveContainer width="100%" height="100%">\
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data=\{aiAnalysisData\}>\
+                    <PolarGrid stroke="#e2e8f0" />\
+                    \{/* Updated: Increased fontSize and used custom label format inside data subject */\}\
+                    <PolarAngleAxis \
+                      dataKey="subject" \
+                      tick=\{\{ fill: '#064e3b', fontSize: 13, fontWeight: 'bold' \}\} \
+                    />\
+                    <PolarRadiusAxis angle=\{30\} domain=\{[0, 100]\} tick=\{false\} axisLine=\{false\} />\
+                    \
+                    \{/* Ideal Coverage (Gray Area) */\}\
+                    <Radar\
+                      name="\uc0\u25033 \u26377 \u20445 \u38556  (Ideal)"\
+                      dataKey="B"\
+                      stroke="#94a3b8"\
+                      strokeWidth=\{1\}\
+                      fill="#94a3b8"\
+                      fillOpacity=\{0.15\}\
+                    />\
+                    \
+                    \{/* Actual Coverage (Green Area) */\}\
+                    <Radar\
+                      name="\uc0\u29694 \u26377 \u20445 \u38556  (Actual)"\
+                      dataKey="A"\
+                      stroke="#059669"\
+                      strokeWidth=\{2\}\
+                      fill="#059669"\
+                      fillOpacity=\{0.6\}\
+                    />\
+                    <Legend iconType="circle" wrapperStyle=\{\{ fontSize: '12px', marginTop: '20px' \}\}/>\
+                    <Tooltip \
+                      contentStyle=\{\{backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'\}\}\
+                      formatter=\{(value, name, props) => \{\
+                        if (name === "\uc0\u25033 \u26377 \u20445 \u38556  (Ideal)") return [formatCurrency(props.payload.target), name];\
+                        return [formatCurrency(props.payload.actual), name];\
+                      \}\}\
+                    />\
+                  </RadarChart>\
+                </ResponsiveContainer>\
+                \{/* Overlay Text for Fear */\}\
+                <div className="absolute top-0 right-0 bg-red-50 text-red-600 text-xs px-2 py-1 rounded-full border border-red-100 font-bold flex items-center gap-1">\
+                  <AlertTriangle size=\{12\} /> \uc0\u30332 \u29694 \u32570 \u21475 \
+                </div>\
+              </div>\
+            </div>\
+            \
+            <p className="text-center text-xs text-slate-500 mt-2 italic">\
+               * \uc0\u28784 \u33394 \u21312 \u22495 \u20195 \u34920 \u24314 \u35696 \u30340 \u27161 \u28310 \u38450 \u35703 \u32178 \u65292 \u32160 \u33394 \u21312 \u22495 \u28858 \u24744 \u30446 \u21069 \u30340 \u35206 \u33995 \u31684 \u22285 \u12290 \u31354 \u30333 \u34389 \u21363 \u28858 \u39080 \u38570 \u32570 \u21475 \u12290 \
+            </p>\
+          </div>\
+        )\}\
+\
+        \{/* High Level Summary Cards */\}\
+        <div className="grid grid-cols-3 gap-6 mb-8">\
+          <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition">\
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition">\
+              <Shield size=\{60\} className="text-blue-500"/>\
+            </div>\
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">\uc0\u20154 \u22781 \u36523 \u25925 \u20445 \u38556 </p>\
+            <p className="text-3xl font-bold text-slate-800">\{formatCurrency(stats.breakdown.life)\}</p>\
+            <div className="w-12 h-1 bg-blue-500 mt-4 rounded-full"></div>\
+          </div>\
+          \
+          <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition">\
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition">\
+              <HeartPulseIcon size=\{60\} className="text-red-500"/>\
+            </div>\
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">\uc0\u21361 \u30142 \u20445 \u38556 \u32317 \u38989 </p>\
+            <p className="text-3xl font-bold text-slate-800">\{formatCurrency(stats.breakdown.ci)\}</p>\
+             <div className="w-12 h-1 bg-red-500 mt-4 rounded-full"></div>\
+          </div>\
+\
+          <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition">\
+             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition">\
+              <ActivityIcon size=\{60\} className="text-emerald-500"/>\
+            </div>\
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">\uc0\u27599 \u24180 \u37291 \u30274 \u19978 \u38480 </p>\
+            <p className="text-3xl font-bold text-slate-800">\{formatCurrency(stats.breakdown.medical)\}</p>\
+             <div className="w-12 h-1 bg-emerald-500 mt-4 rounded-full"></div>\
+          </div>\
+        </div>\
+\
+        \{/* Portfolio Distribution */\}\
+        <div className="grid grid-cols-3 gap-8 mb-10">\
+           <div className="col-span-3">\
+             <h3 className="font-bold text-lg mb-4 text-emerald-900 border-l-4 border-emerald-600 pl-3">\uc0\u30446 \u21069 \u36039 \u29986 \u20998 \u20296 </h3>\
+             <div className="flex gap-8 items-center bg-white p-6 rounded-xl border border-slate-100">\
+               <div className="h-40 w-40 relative">\
+                  <ResponsiveContainer width="100%" height="100%">\
+                    <PieChart>\
+                      <Pie\
+                        data=\{stats.chartData\}\
+                        cx="50%"\
+                        cy="50%"\
+                        innerRadius=\{35\}\
+                        outerRadius=\{60\}\
+                        paddingAngle=\{2\}\
+                        dataKey="value"\
+                      >\
+                        \{stats.chartData.map((entry, index) => (\
+                          <Cell key=\{`cell-$\{index\}`\} fill=\{entry.fill\} />\
+                        ))\}\
+                      </Pie>\
+                    </PieChart>\
+                  </ResponsiveContainer>\
+               </div>\
+               <div className="flex-1 grid grid-cols-2 gap-4">\
+                  \{stats.chartData.map((d, i) => (\
+                    <div key=\{i\} className="flex items-center justify-between border-b border-slate-50 pb-2">\
+                      <div className="flex items-center gap-2">\
+                        <div className="w-3 h-3 rounded-full shadow-sm" style=\{\{backgroundColor: d.fill\}\}></div>\
+                        <span className="text-sm font-medium text-slate-700">\{d.name\}</span>\
+                      </div>\
+                      <span className="text-sm font-bold text-slate-900">\{formatCurrency(d.value)\}</span>\
+                    </div>\
+                  ))\}\
+                  <div className="col-span-2 pt-2 text-right">\
+                    <span className="text-xs text-slate-400 mr-2">\uc0\u24180 \u32371 \u20445 \u36027 \u32317 \u38989 :</span>\
+                    <span className="text-lg font-bold text-slate-800">\{formatCurrency(stats.totalPremium)\}</span>\
+                  </div>\
+               </div>\
+             </div>\
+           </div>\
+        </div>\
+\
+        \{/* Detailed Breakdown */\}\
+        <div className="mb-8">\
+           <h3 className="font-bold text-lg mb-4 text-emerald-900 border-l-4 border-emerald-600 pl-3">\uc0\u35443 \u32048 \u20445 \u38556 \u26126 \u32048 </h3>\
+           <div className="border rounded-lg overflow-hidden border-slate-200">\
+             <table className="w-full text-sm">\
+               <thead className="bg-emerald-50 text-emerald-900 font-bold">\
+                 <tr>\
+                   <th className="py-3 px-4 text-left w-32">\uc0\u20445 \u38556 \u39006 \u21029 </th>\
+                   <th className="py-3 px-4 text-left">\uc0\u20445 \u38570 \u20844 \u21496 </th>\
+                   <th className="py-3 px-4 text-left">\uc0\u35336 \u21123 \u21517 \u31281 </th>\
+                   <th className="py-3 px-4 text-right">\uc0\u20445 \u38556 \u38989 \u24230 /\u19978 \u38480 </th>\
+                   <th className="py-3 px-4 text-center">\uc0\u29376 \u24907 </th>\
+                 </tr>\
+               </thead>\
+               <tbody className="divide-y divide-slate-100">\
+                 \{POLICY_TYPES.map(type => \{\
+                   const typePolicies = policies.filter(p => p.type === type.id);\
+                   if (typePolicies.length === 0) return null;\
+                   \
+                   return (\
+                     <React.Fragment key=\{type.id\}>\
+                       \{typePolicies.map((policy, idx) => (\
+                         <tr key=\{policy.id\} className="hover:bg-slate-50 transition">\
+                           \{idx === 0 && (\
+                             <td className="py-3 px-4 font-bold text-slate-700 bg-slate-50/50 align-top border-r border-slate-100" rowSpan=\{typePolicies.length\}>\
+                               \{type.name.split(' ')[0]\}\
+                             </td>\
+                           )\}\
+                           <td className="py-3 px-4">\
+                             <span className="flex items-center gap-2">\
+                               <span className="w-2 h-2 rounded-full" style=\{\{backgroundColor: INSURERS.find(i => i.id === policy.insurer)?.color\}\}></span>\
+                               \{INSURERS.find(i => i.id === policy.insurer)?.name.split(' ')[0]\}\
+                             </span>\
+                           </td>\
+                           <td className="py-3 px-4 text-slate-600 font-medium">\{policy.name\}</td>\
+                           <td className="py-3 px-4 text-right font-mono text-slate-700">\{formatCurrency(policy.amount)\}</td>\
+                           <td className="py-3 px-4 text-center">\
+                              <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">\{policy.status\}</span>\
+                           </td>\
+                         </tr>\
+                       ))\}\
+                     </React.Fragment>\
+                   );\
+                 \})\}\
+               </tbody>\
+             </table>\
+           </div>\
+        </div>\
+        \
+        \{/* Footer */\}\
+        <div className="mt-auto pt-6 border-t border-slate-200 flex justify-between items-center text-xs text-slate-400">\
+          <p>\uc0\u27492 \u25991 \u20214 \u20677 \u20379 \u20839 \u37096 \u21443 \u32771 \u65292 \u23526 \u38555 \u36064 \u20767 \u37329 \u38989 \u20197 \u20445 \u21934 \u26781 \u27454 \u28858 \u28310 \u12290 </p>\
+          <div className="flex items-center gap-2">\
+            <span className="font-bold text-emerald-700">Manulife \uc0\u23439 \u21033 </span>\
+            <span>|</span>\
+            <p>Page 1 of 1</p>\
+          </div>\
+        </div>\
+      </div>\
+    </div>\
+  );\
+\
+  return (\
+    <div className="font-sans text-slate-900 bg-slate-50 min-h-screen flex">\
+      <Sidebar />\
+      <main className="flex-1 ml-64 print:ml-0 w-full">\
+         \{view === 'dashboard' ? <DashboardView /> : <ReportView />\}\
+      </main>\
+    </div>\
+  );\
+\}\
+\
+// Helper Icons\
+const HeartPulseIcon = (\{ className, size \}) => (\
+  <svg xmlns="http://www.w3.org/2000/svg" width=\{size\} height=\{size\} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className=\{className\}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 5 9.04 11l6.96 2-3 8"/></svg>\
+);\
+const ActivityIcon = (\{ className, size \}) => (\
+    <svg xmlns="http://www.w3.org/2000/svg" width=\{size\} height=\{size\} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className=\{className\}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>\
+);}
